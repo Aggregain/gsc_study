@@ -1,0 +1,103 @@
+
+services:
+  backend:
+    restart: on-failure
+    container_name: backend
+    build:
+      context: ./backend
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+           python manage.py createbucket &&
+           python manage.py migrate &&
+           python manage.py collectstatic --noinput && 
+           gunicorn gsc_backend.wsgi:application --bind 0.0.0.0:8000 --workers $(($(nproc) * 2 + 1))"
+
+    depends_on:
+      - db
+      - redis
+      - celery
+      - celery_beat
+      - minio
+
+  frontend:
+    restart: on-failure
+    container_name: frontend
+    build:
+      context: ./frontend
+    ports:
+      - '8080:80'
+    volumes:
+      - ./frontend:/app
+
+    depends_on:
+      - db
+      - redis
+      - celery
+
+  db:
+    restart: always
+    container_name: db
+    expose:
+      - 5432
+    image: postgres:13-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+
+  redis:
+    restart: always
+    container_name: redis
+    image: redis:7-alpine
+    expose:
+      - 6379
+
+
+  celery:
+    restart: always
+    build:
+      context: ./backend
+    container_name: celery
+    command: celery -A gsc_backend worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+
+  celery_beat:
+    restart: always
+    build:
+      context: ./backend
+    container_name: celery_beat
+    command: celery -A gsc_backend beat --loglevel=info
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+
+  minio:
+    image: minio/minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+
+
+volumes:
+  db_data:
+  minio_data:
