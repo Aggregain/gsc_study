@@ -33,10 +33,7 @@ services:
     volumes:
       - ./frontend:/app
 
-    depends_on:
-      - db
-      - redis
-      - celery
+
 
   db:
     restart: always
