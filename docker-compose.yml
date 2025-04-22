@@ -14,7 +14,7 @@ services:
            python manage.py createbucket &&
            python manage.py migrate &&
            python manage.py collectstatic --noinput && 
-           gunicorn gsc_backend.wsgi:application --bind 0.0.0.0:8000 --workers $(($(nproc) * 2 + 1))" --timeout 120
+           gunicorn gsc_backend.wsgi:application --bind 0.0.0.0:8000  
 
     depends_on:
       - db
