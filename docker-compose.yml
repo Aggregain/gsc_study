@@ -87,6 +87,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: "https://gsc.kz/minio-console/"
     volumes:
       - minio_data:/data
     ports:
